@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>📧 Email → Editor Visual</title>
+  <style>
+    :root {
+      --accent: #2563eb;
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --text: #e8eaf0;
+      --muted: #6b7280;
+      --green: #10b981;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --editor-bar: #12141e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── TOP BAR ── */
+    #top-bar {
+      position: sticky; top: 0; z-index: 9000;
+      background: var(--editor-bar);
+      border-bottom: 1px solid #2a2d3e;
+      display: flex; align-items: center; gap: .5rem;
+      padding: .6rem 1rem; flex-wrap: wrap;
+      box-shadow: 0 4px 20px rgba(0,0,0,.5);
+    }
+    #top-bar .logo { font-weight: 800; font-size: .95rem; color: var(--accent); margin-right: .5rem; letter-spacing: -.5px; }
+    #top-bar button {
+      background: #2a2d3e; color: var(--text);
+      border: 1px solid #353850; padding: .35rem .85rem;
+      border-radius: 6px; cursor: pointer; font-size: .8rem; font-weight: 600;
+      transition: all .2s; white-space: nowrap;
+    }
+    #top-bar button:hover { background: #353850; border-color: var(--accent); }
+    #top-bar button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    #top-bar button.green { background: var(--green); border-color: var(--green); color: #fff; }
+    #top-bar button.green:hover { background: #059669; }
+    .sep { width: 1px; height: 22px; background: #2a2d3e; margin: 0 .2rem; }
+    #top-bar .right { margin-left: auto; display: flex; gap: .5rem; align-items: center; }
+
+    /* ── PASTE ZONE ── */
+    #paste-zone {
+      max-width: 860px; margin: 3rem auto;
+      text-align: center; padding: 0 1rem;
+    }
+    #paste-drop-area {
+      border: 2px dashed #353850;
+      border-radius: 16px;
+      background: var(--surface);
+      padding: 4rem 2rem;
+      cursor: pointer;
+      transition: all .3s;
+      position: relative;
+    }
+    #paste-drop-area:hover, #paste-drop-area.drag-over {
+      border-color: var(--accent);
+      background: #1a2040;
+    }
+    #paste-drop-area .icon { font-size: 3rem; margin-bottom: 1rem; }
+    #paste-drop-area h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: .5rem; }
+    #paste-drop-area p { color: var(--muted); font-size: .95rem; line-height: 1.6; }
+    #paste-drop-area kbd {
+      background: #2a2d3e; border: 1px solid #4a4d60;
+      padding: .15rem .5rem; border-radius: 4px; font-size: .85rem;
+      font-family: monospace; color: var(--text);
+    }
+    #paste-drop-area .hint-badges {
+      display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap; margin-top: 1.2rem;
+    }
+    #paste-drop-area .badge {
+      background: #2a2d3e; border: 1px solid #353850;
+      padding: .3rem .7rem; border-radius: 20px; font-size: .78rem; color: var(--muted);
+    }
+    #manual-paste-btn {
+      margin-top: 1.5rem;
+      display: inline-block;
+      background: var(--accent); color: #fff;
+      border: none; padding: .8rem 2rem;
+      border-radius: 8px; font-size: .95rem; font-weight: 700;
+      cursor: pointer; transition: background .2s;
+    }
+    #manual-paste-btn:hover { background: #1d4ed8; }
+
+    /* ── EDITOR VIEW ── */
+    #editor-view { display: none; }
+    #content-wrapper {
+      max-width: 860px; margin: 0 auto;
+      padding: 1.5rem 1.2rem 6rem;
+    }
+
+    /* ── CONTEÚDO DO EMAIL ── */
+    #post-content {
+      background: #fff; color: #1e1e2e;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 4px 30px rgba(0,0,0,.4);
+      line-height: 1.75; font-size: 1.02rem;
+      font-family: Georgia, serif;
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+    #post-content img {
+      max-width: 100%; height: auto;
+      border-radius: 8px; display: block;
+      margin: 1rem auto;
+      box-shadow: 0 2px 12px rgba(0,0,0,.12);
+    }
+    #post-content h1, #post-content h2, #post-content h3 { color: #111827; margin: 1.5rem 0 .6rem; }
+    #post-content p { margin: .7rem 0; min-height: 1em; }
+    #post-content br { display: block; content: ''; margin: .3rem 0; }
+    #post-content a { color: #2563eb; text-decoration: underline; }
+    #post-content a:hover { color: #1d4ed8; }
+    #post-content div { margin: .4rem 0; }
+    #post-content table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    #post-content th { background: var(--accent); color: #fff; padding: .6rem 1rem; text-align: left; }
+    #post-content td { padding: .6rem 1rem; border-bottom: 1px solid #e5e7eb; }
+    #post-content ul, #post-content ol { margin: .7rem 0 .7rem 1.5rem; }
+    #post-content li { margin: .3rem 0; }
+    #post-content blockquote { border-left: 4px solid #e5e7eb; padding-left: 1rem; color: #6b7280; margin: 1rem 0; }
+
+    /* ── WRAPPERS DE IMAGEM ── */
+    .post-img-wrap {
+      position: relative;
+      margin: 1.2rem 0;
+      display: block;
+    }
+    .post-img-wrap img {
+      width: 100%; height: auto;
+      border-radius: 8px; display: block;
+      box-shadow: 0 2px 12px rgba(0,0,0,.1);
+    }
+
+    /* ── OVERLAY DE EDIÇÃO ── */
+    .img-edit-overlay {
+      display: none;
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,.6);
+      border-radius: 8px;
+      align-items: center; justify-content: center;
+      flex-direction: column; gap: .5rem;
+      z-index: 100;
+    }
+    .img-edit-overlay button {
+      background: #fff; color: #111;
+      border: none; padding: .5rem 1.1rem;
+      border-radius: 8px; font-weight: 700;
+      font-size: .82rem; cursor: pointer;
+      transition: background .2s; width: 210px; text-align: center;
+    }
+    .img-edit-overlay button:hover { background: #e5e7eb; }
+    .img-edit-overlay button.upload-btn { background: var(--yellow); color: #fff; }
+    .img-edit-overlay button.upload-btn:hover { background: #d97706; }
+    .img-edit-overlay button.danger { background: var(--red); color: #fff; }
+    .img-edit-overlay button.danger:hover { background: #dc2626; }
+
+    body.edit-mode .post-img-wrap:hover .img-edit-overlay { display: flex; }
+    body.edit-mode .post-img-wrap:hover img { opacity: .5; transition: opacity .2s; }
+    body.edit-mode .post-img-wrap { cursor: pointer; }
+
+    /* ── BADGE STATUS ── */
+    .img-status-badge {
+      position: absolute; top: 8px; left: 8px;
+      font-size: .68rem; font-weight: 800;
+      padding: .2rem .55rem; border-radius: 20px;
+      pointer-events: none; z-index: 50;
+    }
+    .img-status-badge.github { background: var(--green); color: #fff; }
+    .img-status-badge.external { background: var(--yellow); color: #fff; }
+    .img-status-badge.blob { background: var(--red); color: #fff; }
+    body:not(.edit-mode) .img-status-badge { display: none; }
+
+    /* ── BOTÃO INSERIR ── */
+    .insert-img-btn {
+      display: none;
+      width: 100%; margin: .3rem 0;
+      background: none; border: 2px dashed #d1d5db;
+      color: #9ca3af; padding: .4rem;
+      border-radius: 8px; font-size: .8rem; cursor: pointer;
+      transition: all .2s;
+    }
+    .insert-img-btn:hover { border-color: var(--accent); color: var(--accent); background: #eff6ff; }
+    body.edit-mode .insert-img-btn { display: block; }
+
+    /* ── FLOATING BUTTONS ── */
+    .floating-copy-btn {
+      position: fixed; bottom: 20px; right: 20px;
+      background: var(--green); color: #fff;
+      border: none; padding: .9rem 1.4rem;
+      font-size: .95rem; font-weight: 700;
+      border-radius: 50px; cursor: pointer;
+      box-shadow: 0 4px 20px rgba(16,185,129,.4);
+      transition: all .3s; z-index: 9999;
+    }
+    .floating-copy-btn:hover { background: #059669; transform: translateY(-2px); }
+    .floating-copy-btn.copied { background: var(--accent); }
+
+    .back-to-top {
+      position: fixed; bottom: 80px; right: 20px;
+      background: #1e1e2e; color: #fff;
+      border: none; width: 44px; height: 44px;
+      font-size: 1rem; border-radius: 50%;
+      cursor: pointer; z-index: 9999;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: all .3s; box-shadow: 0 4px 12px rgba(0,0,0,.3);
+    }
+    .back-to-top.visible { opacity: 1; pointer-events: auto; }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed; top: 70px; right: 20px; z-index: 99999;
+      background: #1e1e2e; color: #fff;
+      padding: .7rem 1.2rem; border-radius: 10px;
+      font-size: .85rem; font-weight: 600;
+      box-shadow: 0 4px 20px rgba(0,0,0,.4);
+      transform: translateY(-10px); opacity: 0;
+      transition: all .3s; pointer-events: none; max-width: 320px;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+    #toast.success { border-left: 4px solid var(--green); }
+    #toast.error { border-left: 4px solid var(--red); }
+    #toast.info { border-left: 4px solid var(--accent); }
+
+    /* ── MODAL ── */
+    .img-modal-backdrop {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.7);
+      z-index: 10000; align-items: center; justify-content: center;
+    }
+    .img-modal-backdrop.open { display: flex; }
+    .img-modal {
+      background: var(--surface); border: 1px solid #2a2d3e;
+      border-radius: 14px; padding: 1.5rem;
+      width: min(520px, 95vw);
+      box-shadow: 0 8px 40px rgba(0,0,0,.5);
+      color: var(--text);
+    }
+    .img-modal h3 { margin-bottom: 1rem; font-size: 1.1rem; }
+    .img-modal label { display: block; font-size: .82rem; color: #9ca3af; margin: .8rem 0 .3rem; font-weight: 600; }
+    .img-modal input[type=text] {
+      width: 100%; padding: .6rem .8rem;
+      border: 1.5px solid #353850; border-radius: 8px;
+      font-size: .9rem; outline: none;
+      background: var(--surface2); color: var(--text);
+      transition: border .2s;
+    }
+    .img-modal input[type=text]:focus { border-color: var(--accent); }
+    .img-modal .modal-actions { display: flex; gap: .6rem; margin-top: 1.2rem; flex-wrap: wrap; }
+    .img-modal .modal-actions button {
+      flex: 1; padding: .6rem; border: none; border-radius: 8px;
+      font-weight: 700; font-size: .88rem; cursor: pointer;
+      transition: background .2s; min-width: 100px;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #2a2d3e; color: var(--text); }
+    .btn-secondary:hover { background: #353850; }
+    .btn-danger { background: var(--red); color: #fff; }
+    .btn-upload { background: var(--yellow); color: #fff; }
+
+    .pxb-grid {
+      display: grid; grid-template-columns: repeat(3,1fr);
+      gap: .5rem; margin-top: .8rem;
+      max-height: 230px; overflow-y: auto;
+    }
+    .pxb-grid img {
+      width: 100%; aspect-ratio: 16/9; object-fit: cover;
+      border-radius: 6px; cursor: pointer;
+      border: 2px solid transparent; transition: border .15s, transform .15s;
+    }
+    .pxb-grid img:hover { border-color: var(--accent); transform: scale(1.03); }
+    .pxb-grid img.selected { border-color: var(--green); }
+    .pxb-status { font-size: .78rem; color: var(--muted); margin-top: .4rem; min-height: 1.2em; }
+
+    /* ── UPLOAD ALL BANNER ── */
+    #upload-all-banner {
+      display: none;
+      background: linear-gradient(135deg, #92400e, #d97706);
+      color: #fff; border-radius: 10px;
+      padding: 1rem 1.2rem; margin-bottom: 1rem;
+      display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+    }
+    #upload-all-banner p { flex: 1; font-size: .88rem; line-height: 1.4; font-weight: 600; }
+    #upload-all-banner button {
+      background: #fff; color: #92400e;
+      border: none; padding: .5rem 1.2rem;
+      border-radius: 8px; font-weight: 800;
+      font-size: .85rem; cursor: pointer; white-space: nowrap;
+      transition: all .2s;
+    }
+    #upload-all-banner button:hover { background: #fef3c7; }
+    #upload-all-banner.hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- TOP BAR -->
+<div id="top-bar">
+  <span class="logo">📧 Email Editor</span>
+  <button onclick="goToPaste()" title="Voltar para colar novo conteúdo">📋 Colar Novo Email</button>
+  <div class="sep"></div>
+  <button id="btn-edit-mode" onclick="toggleEditMode()">✏️ Modo Edição</button>
+  <button onclick="openInsertModal(document.querySelector('#post-content > *:last-child'))">➕ Inserir Imagem</button>
+  <div class="sep"></div>
+  <button onclick="uploadAllExternalImages()" style="background:#92400e;color:#fff;border-color:#92400e;">☁️ Enviar TODAS pro GitHub</button>
+  <div class="right">
+    <button class="green" onclick="copyPostHTML()">📋 Copiar Rich Text</button>
+  </div>
+</div>
+
+<!-- PASTE ZONE -->
+<div id="paste-zone">
+  <div id="paste-drop-area">
+    <div class="icon">📩</div>
+    <h2>Cole o conteúdo do email aqui</h2>
+    <p>
+      Abra o email no Gmail / Outlook, selecione tudo <kbd>Ctrl+A</kbd>,<br>
+      copie <kbd>Ctrl+C</kbd>, depois clique no botão abaixo ou use <kbd>Ctrl+V</kbd> aqui.
+    </p>
+    <div class="hint-badges">
+      <span class="badge">✅ Detecta imagens automaticamente</span>
+      <span class="badge">✅ Mantém formatação</span>
+      <span class="badge">✅ Envio pro GitHub integrado</span>
+      <span class="badge">✅ Insira imagens do Pixabay</span>
+    </div>
+    <button id="manual-paste-btn" onclick="triggerManualPaste()">📋 Clicar e Colar (Ctrl+V)</button>
+  </div>
+</div>
+
+<!-- EDITOR VIEW -->
+<div id="editor-view">
+  <div id="content-wrapper">
+
+    <div id="upload-all-banner">
+      <p>⚠️ Foram detectadas imagens externas/temporárias. Envie todas para o GitHub de uma vez para não perder nada!</p>
+      <button onclick="uploadAllExternalImages()">☁️ Enviar Todas Agora</button>
+    </div>
+
+    <div id="post-content"></div>
+
+  </div>
+</div>
+
+<!-- BOTÕES FLUTUANTES -->
+<button class="floating-copy-btn" id="copyBtn" onclick="copyPostHTML()" style="display:none;">📋 Copiar Rich Text (P/ WP)</button>
+<button class="back-to-top" id="backToTopBtn" title="Voltar ao topo">▲</button>
+
+<!-- MODAIS -->
+<div id="modal-url" class="img-modal-backdrop">
+  <div class="img-modal">
+    <h3>🔗 Trocar imagem por URL</h3>
+    <label>URL da imagem</label>
+    <input type="text" id="url-input" placeholder="https://exemplo.com/imagem.jpg" />
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="applyUrlImage()">Aplicar</button>
+      <button class="btn-secondary" onclick="closeModal('modal-url')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-pixabay" class="img-modal-backdrop">
+  <div class="img-modal">
+    <h3>🔍 Buscar imagem — Pixabay</h3>
+    <label>Pesquisa (inglês funciona melhor)</label>
+    <div style="display:flex;gap:.5rem;">
+      <input type="text" id="pxb-query" placeholder="ex: technology business" style="flex:1;" onkeydown="if(event.key==='Enter') searchPixabay()"/>
+      <button class="btn-primary" style="flex:0;padding:.6rem 1rem;" onclick="searchPixabay()">Buscar</button>
+    </div>
+    <div class="pxb-grid" id="pxb-grid"></div>
+    <div class="pxb-status" id="pxb-status"></div>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="applyPixabayImage()">✅ Usar selecionada</button>
+      <button class="btn-secondary" onclick="closeModal('modal-pixabay')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-insert" class="img-modal-backdrop">
+  <div class="img-modal">
+    <h3>➕ Inserir nova imagem</h3>
+    <label>Buscar no Pixabay</label>
+    <div style="display:flex;gap:.5rem;">
+      <input type="text" id="insert-query" placeholder="ex: data analytics" style="flex:1;" onkeydown="if(event.key==='Enter') searchInsertPixabay()"/>
+      <button class="btn-primary" style="flex:0;padding:.6rem 1rem;" onclick="searchInsertPixabay()">Buscar</button>
+    </div>
+    <div class="pxb-grid" id="insert-pxb-grid"></div>
+    <div class="pxb-status" id="insert-pxb-status"></div>
+    <label style="margin-top:.8rem;">— ou cole uma URL diretamente —</label>
+    <input type="text" id="insert-url-input" placeholder="https://exemplo.com/foto.jpg"/>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="confirmInsertImage()">✅ Inserir</button>
+      <button class="btn-secondary" onclick="closeModal('modal-insert')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════
+   EMAIL EDITOR — configurações GitHub / Pixabay
+   Altere as linhas abaixo com seus dados
+════════════════════════════════════════════════ */
+const PIXABAY_KEY   = "";
+const GITHUB_TOKEN  = "";
+const GITHUB_OWNER  = "cursoarteatuarial";
+const GITHUB_REPO   = "blogs";
+const GITHUB_FOLDER = "blog";
+
+/* ── Utilitários ── */
+const $  = (sel, ctx) => (ctx || document).querySelector(sel);
+const $$ = (sel, ctx) => [...(ctx || document).querySelectorAll(sel)];
+
+function showToast(msg, type = 'info', duration = 3500) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'show ' + type;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.className = ''; }, duration);
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function isGithubUrl(src) {
+  return src && (
+    src.includes('raw.githubusercontent.com') ||
+    src.includes('cdn.jsdelivr.net/gh/')
+  );
+}
+function isBlobUrl(src) { return src && src.startsWith('blob:'); }
+function isDataUrl(src) { return src && src.startsWith('data:'); }
+function isExternalImg(src) { return !isGithubUrl(src); }
+
+/* ── Estado ── */
+let editMode = false;
+let currentTarget = null;
+let selectedPixabayUrl = null;
+let insertTarget = null;
+
+/* ══════════════════════════════════════════════
+   PASTE — detecção e processamento do email
+══════════════════════════════════════════════ */
+function triggerManualPaste() {
+  showToast('Use Ctrl+V agora na página!', 'info', 3000);
+}
+
+// Escuta Ctrl+V global
+document.addEventListener('paste', handlePaste);
+
+// Drag & drop de texto/html
+const dropArea = $('#paste-drop-area');
+dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.classList.add('drag-over'); });
+dropArea.addEventListener('dragleave', () => dropArea.classList.remove('drag-over'));
+dropArea.addEventListener('drop', e => {
+  e.preventDefault();
+  dropArea.classList.remove('drag-over');
+  const html = e.dataTransfer.getData('text/html');
+  const text = e.dataTransfer.getData('text/plain');
+  loadEmailContent(html || text);
+});
+
+function handlePaste(e) {
+  const html = e.clipboardData.getData('text/html');
+  const text = e.clipboardData.getData('text/plain');
+  if (!html && !text) return;
+  e.preventDefault();
+  loadEmailContent(html || `<p>${text.replace(/\n/g,'</p><p>')}</p>`);
+}
+
+function loadEmailContent(html) {
+  const content = $('#post-content');
+
+  // ── Parse via DOMParser — preserva tudo: imagens, links, formatação ──
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+
+  // Remove apenas ruído real
+  doc.querySelectorAll('script, style').forEach(el => el.remove());
+
+  // Remove tracking pixels (1x1 ou URLs suspeitas)
+  doc.querySelectorAll('img').forEach(img => {
+    const w = parseInt(img.getAttribute('width') || '99');
+    const h = parseInt(img.getAttribute('height') || '99');
+    const src = (img.getAttribute('src') || '').toLowerCase();
+    if (w <= 2 || h <= 2 || src.includes('track') || src.includes('pixel') ||
+        src.includes('beacon') || src.includes('open.php')) {
+      img.remove();
+    }
+  });
+
+  // Garante que links abrem em nova aba
+  doc.querySelectorAll('a').forEach(a => {
+    a.setAttribute('target', '_blank');
+    a.setAttribute('rel', 'noopener noreferrer');
+  });
+
+  // Cola o HTML preservando a estrutura original do email
+  content.innerHTML = doc.body.innerHTML;
+
+  // Envolve imagens em wrappers editáveis
+  wrapOrphanImages(content);
+
+  // Prepara overlays de edição nas imagens
+  prepareImages();
+
+  // Injeta botões "+ Inserir imagem" em TODOS os pontos possíveis
+  injectInsertButtons();
+
+  updateAllBadges();
+  checkExternalImages();
+
+  $('#paste-zone').style.display = 'none';
+  $('#editor-view').style.display = 'block';
+  $('#copyBtn').style.display = 'flex';
+
+  const imgCount = $$('.post-img-wrap', content).length;
+  showToast(`✅ Email carregado! ${imgCount} imagem(ns) detectada(s).`, 'success', 4000);
+}
+
+function wrapOrphanImages(container) {
+  // Pega imagens que não estão dentro de .post-img-wrap
+  $$('img', container).forEach(img => {
+    if (img.closest('.post-img-wrap')) return;
+    if (img.width === 1 || img.height === 1) { img.remove(); return; }
+    const wrap = document.createElement('div');
+    wrap.className = 'post-img-wrap';
+    img.parentNode.insertBefore(wrap, img);
+    wrap.appendChild(img);
+  });
+}
+
+/* ── Verifica imagens externas e mostra banner ── */
+function checkExternalImages() {
+  const imgs = $$('.post-img-wrap img', $('#post-content'));
+  const hasExternal = imgs.some(img => isExternalImg(img.src));
+  const banner = $('#upload-all-banner');
+  if (hasExternal) {
+    banner.style.display = 'flex';
+    banner.classList.remove('hidden');
+  } else {
+    banner.classList.add('hidden');
+  }
+}
+
+/* ── Voltar para colar ── */
+function goToPaste() {
+  if (!confirm('Isso vai limpar o conteúdo atual. Continuar?')) return;
+  $('#paste-zone').style.display = 'block';
+  $('#editor-view').style.display = 'none';
+  $('#copyBtn').style.display = 'none';
+  $('#post-content').innerHTML = '';
+  document.body.classList.remove('edit-mode');
+  $('#btn-edit-mode').classList.remove('active');
+}
+
+/* ══════════════════════════════════════════════
+   MODO EDIÇÃO
+══════════════════════════════════════════════ */
+function toggleEditMode() {
+  editMode = !editMode;
+  document.body.classList.toggle('edit-mode', editMode);
+  $('#btn-edit-mode').classList.toggle('active', editMode);
+  $('#btn-edit-mode').textContent = editMode ? '✏️ Edição ON' : '✏️ Modo Edição';
+  updateAllBadges();
+}
+
+/* ── Badges de status ── */
+function updateAllBadges() {
+  $$('.img-status-badge').forEach(b => b.remove());
+  if (!editMode) return;
+  $$('.post-img-wrap').forEach(wrap => {
+    const img = wrap.querySelector('img');
+    if (!img) return;
+    const badge = document.createElement('span');
+    badge.className = 'img-status-badge';
+    if (isGithubUrl(img.src)) {
+      badge.classList.add('github');
+      badge.textContent = '✅ GitHub';
+    } else if (isBlobUrl(img.src) || isDataUrl(img.src)) {
+      badge.classList.add('blob');
+      badge.textContent = '⚠️ Temporária';
+    } else {
+      badge.classList.add('external');
+      badge.textContent = '⚠️ Externa';
+    }
+    wrap.appendChild(badge);
+  });
+}
+
+/* ── Prepara overlays ── */
+function prepareImages() {
+  $$('.post-img-wrap').forEach(wrap => {
+    if (wrap.querySelector('.img-edit-overlay')) return;
+    wrap.style.position = 'relative';
+    wrap.appendChild(makeOverlay());
+  });
+}
+
+function makeOverlay() {
+  const div = document.createElement('div');
+  div.className = 'img-edit-overlay';
+  div.innerHTML = `
+    <button onclick="openImgModal(this,'url')">🔗 Colar URL</button>
+    <button onclick="openImgModal(this,'pixabay')">🔍 Buscar Pixabay</button>
+    <button class="upload-btn" onclick="uploadImgToGitHub(this)">☁️ Enviar pro GitHub</button>
+    <button class="danger" onclick="removeImg(this)">🗑️ Remover</button>
+  `;
+  return div;
+}
+
+/* ══════════════════════════════════════════════
+   UPLOAD PARA GITHUB
+══════════════════════════════════════════════ */
+async function imgToBase64(img) {
+  // 1. Tenta fetch direto
+  try {
+    const resp = await fetch(img.src);
+    if (resp.ok) {
+      const buf = await resp.arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      let bin = '';
+      bytes.forEach(b => bin += String.fromCharCode(b));
+      return { b64: btoa(bin), ext: 'webp' };
+    }
+  } catch(e) {}
+
+  // 2. Fallback: canvas (funciona para blob: e data:)
+  return new Promise(resolve => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const tmpImg = new Image();
+    tmpImg.crossOrigin = 'anonymous';
+    tmpImg.onload = () => {
+      canvas.width  = tmpImg.naturalWidth  || 800;
+      canvas.height = tmpImg.naturalHeight || 600;
+      ctx.drawImage(tmpImg, 0, 0);
+      const dataUrl = canvas.toDataURL('image/webp', 0.85);
+      resolve({ b64: dataUrl.split(',')[1], ext: 'webp' });
+    };
+    tmpImg.onerror = () => resolve(null);
+    tmpImg.src = img.src;
+  });
+}
+
+async function pushToGitHub(b64content, ext = 'webp') {
+  const filename = `email-img-${Date.now()}.${ext}`;
+  const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FOLDER}/${filename}`;
+  const resp = await fetch(apiUrl, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `token ${GITHUB_TOKEN}`,
+      'Accept': 'application/vnd.github.v3+json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      message: `email-editor: upload ${filename}`,
+      content: b64content,
+    })
+  });
+  if (resp.status === 201 || resp.status === 200) {
+    return `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/main/${GITHUB_FOLDER}/${filename}`;
+  }
+  const err = await resp.json().catch(() => ({}));
+  throw new Error(err.message || `HTTP ${resp.status}`);
+}
+
+async function uploadImgToGitHub(btn) {
+  const overlay = btn.closest('.img-edit-overlay');
+  const wrap    = overlay.closest('.post-img-wrap');
+  const img     = wrap.querySelector('img');
+
+  if (!img) { showToast('Nenhuma imagem.', 'error'); return; }
+  if (isGithubUrl(img.src)) { showToast('✅ Já está no GitHub!', 'success'); return; }
+
+  btn.textContent = '⏳ Enviando…';
+  btn.disabled = true;
+  showToast('Enviando imagem para o GitHub…', 'info');
+
+  try {
+    const result = await imgToBase64(img);
+    if (!result) throw new Error('Não foi possível converter a imagem.');
+    const newUrl = await pushToGitHub(result.b64, result.ext);
+    img.src = newUrl;
+    updateAllBadges();
+    checkExternalImages();
+    showToast('✅ Imagem salva no GitHub!', 'success', 4000);
+  } catch(e) {
+    showToast(`❌ Erro: ${e.message}`, 'error', 5000);
+  } finally {
+    btn.textContent = '☁️ Enviar pro GitHub';
+    btn.disabled = false;
+  }
+}
+
+/* ── Upload de TODAS as imagens externas ── */
+async function uploadAllExternalImages() {
+  const imgs = $$('.post-img-wrap img', $('#post-content')).filter(img => isExternalImg(img.src));
+  if (!imgs.length) { showToast('✅ Todas as imagens já estão no GitHub!', 'success'); return; }
+
+  showToast(`⏳ Enviando ${imgs.length} imagem(ns)…`, 'info', 99999);
+  let ok = 0, fail = 0;
+
+  for (const img of imgs) {
+    try {
+      const result = await imgToBase64(img);
+      if (!result) throw new Error('conversão falhou');
+      const newUrl = await pushToGitHub(result.b64, result.ext);
+      img.src = newUrl;
+      ok++;
+      // Delay para não bater rate limit do GitHub
+      await new Promise(r => setTimeout(r, 800));
+    } catch(e) {
+      console.warn('Falha na imagem:', img.src, e);
+      fail++;
+    }
+  }
+
+  updateAllBadges();
+  checkExternalImages();
+  const msg = fail > 0
+    ? `✅ ${ok} enviada(s) | ❌ ${fail} com falha (verifique no modo edição)`
+    : `✅ Todas as ${ok} imagem(ns) enviadas pro GitHub!`;
+  showToast(msg, fail > 0 ? 'info' : 'success', 6000);
+}
+
+/* ── Abre modais de troca ── */
+function openImgModal(btn, mode) {
+  const overlay = btn.closest('.img-edit-overlay');
+  const wrap    = overlay.closest('.post-img-wrap');
+  currentTarget = { wrap, img: wrap.querySelector('img') };
+  selectedPixabayUrl = null;
+  if (mode === 'url') {
+    $('#url-input').value = currentTarget.img ? currentTarget.img.src : '';
+    $('#modal-url').classList.add('open');
+  } else {
+    $('#pxb-query').value = '';
+    $('#pxb-grid').innerHTML = '';
+    $('#pxb-status').textContent = '';
+    $('#modal-pixabay').classList.add('open');
+  }
+}
+
+function applyUrlImage() {
+  const url = $('#url-input').value.trim();
+  if (!url) { alert('Cole uma URL válida.'); return; }
+  applyImage(url);
+  closeModal('modal-url');
+  updateAllBadges();
+  checkExternalImages();
+  if (!isGithubUrl(url)) showToast('⚠️ URL externa — clique em "☁️ Enviar pro GitHub" para fixá-la!', 'info', 5000);
+}
+
+async function searchPixabay() {
+  const q = $('#pxb-query').value.trim();
+  if (!q) { alert('Digite o que buscar.'); return; }
+  $('#pxb-status').textContent = 'Buscando…';
+  $('#pxb-grid').innerHTML = '';
+  const url = `https://pixabay.com/api/?key=${PIXABAY_KEY}&q=${encodeURIComponent(q)}&image_type=photo&orientation=horizontal&safesearch=true&per_page=12&lang=pt`;
+  try {
+    const data = await (await fetch(url)).json();
+    const hits = data.hits || [];
+    if (!hits.length) { $('#pxb-status').textContent = 'Nenhuma imagem encontrada.'; return; }
+    $('#pxb-status').textContent = `${hits.length} resultados — clique para selecionar`;
+    hits.forEach(h => {
+      const img = document.createElement('img');
+      img.src = h.previewURL;
+      img.dataset.large = h.largeImageURL || h.webformatURL;
+      img.onclick = () => {
+        $$('#pxb-grid img').forEach(i => i.classList.remove('selected'));
+        img.classList.add('selected');
+        selectedPixabayUrl = img.dataset.large;
+      };
+      $('#pxb-grid').appendChild(img);
+    });
+  } catch(e) { $('#pxb-status').textContent = 'Erro: ' + e.message; }
+}
+
+function applyPixabayImage() {
+  if (!selectedPixabayUrl) { alert('Selecione uma imagem.'); return; }
+  applyImage(selectedPixabayUrl);
+  closeModal('modal-pixabay');
+  updateAllBadges();
+  checkExternalImages();
+  showToast('⚠️ Imagem do Pixabay é temporária — clique em "☁️ Enviar pro GitHub"!', 'info', 5000);
+}
+
+function applyImage(src) {
+  if (!currentTarget) return;
+  const { wrap, img } = currentTarget;
+  if (img) {
+    img.src = src;
+  } else {
+    const newImg = document.createElement('img');
+    newImg.src = src;
+    wrap.insertBefore(newImg, wrap.firstChild);
+    currentTarget.img = newImg;
+  }
+}
+
+function removeImg(btn) {
+  if (!confirm('Remover esta imagem?')) return;
+  const wrap = btn.closest('.img-edit-overlay').closest('.post-img-wrap');
+  wrap.remove();
+  checkExternalImages();
+}
+
+/* ── Inserir imagem ── */
+function openInsertModal(btn) {
+  insertTarget = btn;
+  selectedPixabayUrl = null;
+  currentTarget = null;
+  $('#insert-query').value = '';
+  $('#insert-url-input').value = '';
+  $('#insert-pxb-grid').innerHTML = '';
+  $('#insert-pxb-status').textContent = '';
+  $('#modal-insert').classList.add('open');
+}
+
+async function searchInsertPixabay() {
+  const q = $('#insert-query').value.trim();
+  if (!q) { alert('Digite o que buscar.'); return; }
+  $('#insert-pxb-status').textContent = 'Buscando…';
+  $('#insert-pxb-grid').innerHTML = '';
+  const url = `https://pixabay.com/api/?key=${PIXABAY_KEY}&q=${encodeURIComponent(q)}&image_type=photo&orientation=horizontal&safesearch=true&per_page=9&lang=pt`;
+  try {
+    const data = await (await fetch(url)).json();
+    const hits = data.hits || [];
+    if (!hits.length) { $('#insert-pxb-status').textContent = 'Nenhuma imagem.'; return; }
+    $('#insert-pxb-status').textContent = `${hits.length} resultados`;
+    hits.forEach(h => {
+      const img = document.createElement('img');
+      img.src = h.previewURL;
+      img.dataset.large = h.largeImageURL || h.webformatURL;
+      img.onclick = () => {
+        $$('#insert-pxb-grid img').forEach(i => i.classList.remove('selected'));
+        img.classList.add('selected');
+        selectedPixabayUrl = img.dataset.large;
+        $('#insert-url-input').value = img.dataset.large;
+      };
+      $('#insert-pxb-grid').appendChild(img);
+    });
+  } catch(e) { $('#insert-pxb-status').textContent = 'Erro: ' + e.message; }
+}
+
+function confirmInsertImage() {
+  const url = $('#insert-url-input').value.trim() || selectedPixabayUrl;
+  if (!url) { alert('Informe uma URL ou selecione uma imagem.'); return; }
+
+  const wrap = document.createElement('div');
+  wrap.className = 'post-img-wrap';
+  wrap.style.position = 'relative';
+
+  const img = document.createElement('img');
+  img.src = url;
+  img.style.cssText = 'width:100%;height:auto;border-radius:8px;display:block;';
+  wrap.appendChild(img);
+  wrap.appendChild(makeOverlay());
+
+  const btnBelow = makeInsertBtn();
+  insertTarget.after(wrap);
+  wrap.after(btnBelow);
+
+  closeModal('modal-insert');
+  insertTarget = null;
+  updateAllBadges();
+  checkExternalImages();
+
+  if (!isGithubUrl(url)) showToast('⚠️ Imagem inserida! Clique em "☁️ Enviar pro GitHub" para fixá-la.', 'info', 5000);
+}
+
+function makeInsertBtn() {
+  const btn = document.createElement('button');
+  btn.className = 'insert-img-btn';
+  btn.textContent = '+ Inserir imagem aqui';
+  btn.onclick = () => openInsertModal(btn);
+  return btn;
+}
+
+function injectInsertButtons() {
+  const content = $('#post-content');
+
+  // Remove botões antigos para não duplicar
+  $$('.insert-img-btn', content).forEach(b => b.remove());
+
+  // Coleta TODOS os elementos "folha de bloco" — ou seja, qualquer elemento
+  // que contenha texto/imagens mas não tenha filhos de bloco significativos.
+  // Esses são os pontos onde faz sentido inserir uma imagem antes/depois.
+  const blockTags = new Set(['P','DIV','H1','H2','H3','H4','H5','H6','BLOCKQUOTE',
+    'LI','TD','TH','FIGURE','SECTION','ARTICLE','HEADER','FOOTER','TR']);
+
+  // Coleta todos os nós de bloco que têm conteúdo visível
+  const candidates = [];
+
+  function collectBlocks(node, depth) {
+    if (depth > 8) return; // evita recursão infinita em emails muito aninhados
+    [...node.children].forEach(child => {
+      if (child.classList && child.classList.contains('insert-img-btn')) return;
+      if (child.classList && child.classList.contains('post-img-wrap')) {
+        candidates.push(child);
+        return;
+      }
+      if (blockTags.has(child.tagName)) {
+        // Tem filhos de bloco? vai fundo
+        const hasBlockKids = [...child.children].some(c =>
+          blockTags.has(c.tagName) && !c.classList.contains('insert-img-btn')
+        );
+        if (hasBlockKids) {
+          collectBlocks(child, depth + 1);
+        } else {
+          // Folha de bloco com conteúdo — candidata
+          if (child.textContent.trim() || child.querySelector('img')) {
+            candidates.push(child);
+          }
+        }
+      }
+    });
+  }
+
+  collectBlocks(content, 0);
+
+  // Insere botão antes do primeiro candidato (= topo do conteúdo útil)
+  if (candidates.length > 0) {
+    candidates[0].before(makeInsertBtn());
+  } else {
+    // Fallback: coloca no topo absoluto
+    content.insertBefore(makeInsertBtn(), content.firstChild);
+  }
+
+  // Insere botão após cada candidato
+  candidates.forEach(el => el.after(makeInsertBtn()));
+}
+
+/* ── Copy Rich Text ── */
+function copyPostHTML() {
+  const container = $('#post-content');
+  const clone = container.cloneNode(true);
+
+  // Remove elementos de UI
+  ['.insert-img-btn', '.img-edit-overlay', '.img-status-badge'].forEach(sel =>
+    clone.querySelectorAll(sel).forEach(el => el.remove())
+  );
+  clone.querySelectorAll('.post-img-wrap').forEach(el => { el.style.position = ''; });
+
+  // ── Normaliza para WordPress ──
+  // O WP espera <p> separados. Emails chegam como divs/spans aninhados.
+  // Esta função extrai o HTML limpo preservando parágrafos e imagens.
+  const normalized = normalizeForWordPress(clone);
+
+  const blobHtml = new Blob([normalized], { type: 'text/html' });
+  const blobText = new Blob([clone.innerText], { type: 'text/plain' });
+
+  navigator.clipboard.write([new ClipboardItem({ 'text/html': blobHtml, 'text/plain': blobText })])
+    .then(() => {
+      const btn = $('#copyBtn');
+      btn.textContent = '✅ Copiado! Cole no Visual do WP.';
+      btn.classList.add('copied');
+      showToast('✅ Rich text copiado para o WordPress!', 'success');
+      setTimeout(() => { btn.textContent = '📋 Copiar Rich Text (P/ WP)'; btn.classList.remove('copied'); }, 3000);
+    })
+    .catch(() => {
+      alert('Bloqueado pelo navegador. Selecione o conteúdo e use Ctrl+C.');
+    });
+}
+
+/* ── Converte HTML de email → HTML limpo com <p> para o WP ──
+   Percorre a árvore e extrai blocos de texto como parágrafos,
+   preservando imagens, links, negrito, itálico e headings. */
+function normalizeForWordPress(container) {
+  const blockTags = new Set(['P','DIV','H1','H2','H3','H4','H5','H6',
+    'BLOCKQUOTE','LI','TR','TD','TH','TABLE','UL','OL','FIGURE',
+    'SECTION','ARTICLE','HEADER','FOOTER','BR']);
+
+  const inlineTags = new Set(['A','STRONG','B','EM','I','U','SPAN','FONT',
+    'SMALL','SUB','SUP','MARK','CODE']);
+
+  let paragraphs = [];
+
+  function extractText(node) {
+    // Retorna HTML inline preservando links, bold, etc.
+    // Trata QUALQUER elemento filho como inline (inclusive divs dentro de <a>)
+    let html = '';
+    node.childNodes.forEach(child => {
+      if (child.nodeType === Node.TEXT_NODE) {
+        html += child.textContent;
+      } else if (child.nodeType === Node.ELEMENT_NODE) {
+        const tag = child.tagName;
+        if (tag === 'BR') {
+          html += '<br>';
+        } else if (tag === 'IMG') {
+          html += child.outerHTML;
+        } else if (tag === 'STRONG' || tag === 'B') {
+          html += `<strong>${extractText(child)}</strong>`;
+        } else if (tag === 'EM' || tag === 'I') {
+          html += `<em>${extractText(child)}</em>`;
+        } else if (tag === 'A') {
+          // Usa child.href (URL resolvida pelo DOM) — mais confiável que getAttribute
+          // que pode retornar URL relativa ou vazia em emails de newsletter
+          const href = child.href || child.getAttribute('href') || '';
+          const inner = extractText(child).trim();
+          if (href && inner) {
+            html += `<a href="${href}" target="_blank" rel="noopener noreferrer">${inner}</a>`;
+          } else {
+            // Link sem href válido — mantém só o texto
+            html += inner;
+          }
+        } else {
+          // Qualquer outro tag (div, span, p, td dentro de <a>, etc.) — extrai texto
+          html += extractText(child);
+        }
+      }
+    });
+    return html;
+  }
+
+  function processNode(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const t = node.textContent.trim();
+      if (t) paragraphs.push(`<p>${t}</p>`);
+      return;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+    const tag = node.tagName;
+
+    // Imagem em wrapper → bloco de imagem
+    if (node.classList && node.classList.contains('post-img-wrap')) {
+      const img = node.querySelector('img');
+      if (img) {
+        paragraphs.push(`<p><img src="${img.src}" alt="${img.alt || ''}" style="max-width:100%;height:auto;display:block;margin:1rem auto;border-radius:8px;" /></p>`);
+      }
+      return;
+    }
+
+    // Headings — preserva
+    if (['H1','H2','H3','H4','H5','H6'].includes(tag)) {
+      const text = extractText(node).trim();
+      if (text) paragraphs.push(`<${tag.toLowerCase()}>${text}</${tag.toLowerCase()}>`);
+      return;
+    }
+
+    // Parágrafo direto
+    if (tag === 'P') {
+      const inner = extractText(node).trim();
+      if (inner) paragraphs.push(`<p>${inner}</p>`);
+      return;
+    }
+
+    // Listas
+    if (tag === 'UL' || tag === 'OL') {
+      let items = '';
+      node.querySelectorAll('li').forEach(li => {
+        items += `<li>${extractText(li).trim()}</li>`;
+      });
+      if (items) paragraphs.push(`<${tag.toLowerCase()}>${items}</${tag.toLowerCase()}>`);
+      return;
+    }
+
+    // TABLE/TR — percorre apenas filhos diretos para não duplicar células aninhadas
+    if (['TABLE','TBODY','THEAD','TR'].includes(tag)) {
+      [...node.children].forEach(child => processNode(child));
+      return;
+    }
+
+    // TD, TH, BODY, DIV, SPAN — processa filhos
+    if (['TD','TH','BODY','DIV','SPAN',
+         'SECTION','ARTICLE','FIGURE','BLOCKQUOTE'].includes(tag)) {
+      // Verifica se tem filhos block (exclui inline como A, SPAN, STRONG, EM, B, I)
+      const inlineOnlyTags = new Set(['A','SPAN','STRONG','B','EM','I','U','BR',
+        'SMALL','SUB','SUP','MARK','CODE','FONT','ABBR','CITE','Q','S','DEL','INS']);
+      const hasBlockKids = [...node.children].some(c =>
+        !inlineOnlyTags.has(c.tagName) && (blockTags.has(c.tagName) || c.classList.contains('post-img-wrap'))
+      );
+      if (hasBlockKids) {
+        [...node.childNodes].forEach(child => processNode(child));
+      } else {
+        // Só inline/texto — vira um <p>
+        const inner = extractText(node).trim();
+        if (inner) paragraphs.push(`<p>${inner}</p>`);
+      }
+      return;
+    }
+
+    // IMG solta
+    if (tag === 'IMG') {
+      paragraphs.push(`<p><img src="${node.src}" alt="${node.alt || ''}" style="max-width:100%;height:auto;display:block;margin:1rem auto;border-radius:8px;" /></p>`);
+      return;
+    }
+
+    // <A> solto fora de contexto inline — trata como parágrafo com link
+    if (tag === 'A') {
+      const href = node.href || node.getAttribute('href') || '';
+      const inner = extractText(node).trim();
+      if (inner) {
+        if (href) {
+          paragraphs.push(`<p><a href="${href}" target="_blank" rel="noopener noreferrer">${inner}</a></p>`);
+        } else {
+          paragraphs.push(`<p>${inner}</p>`);
+        }
+      }
+      return;
+    }
+
+    // Qualquer outro elemento — processa filhos
+    [...node.childNodes].forEach(child => processNode(child));
+  }
+
+  [...container.childNodes].forEach(child => processNode(child));
+
+  // Limpa parágrafos vazios e duplicados
+  const result = paragraphs
+    .map(p => p.trim())
+    .filter(p => p && p !== '<p></p>' && p !== '<p><br></p>')
+    .join('\n');
+
+  return result;
+}
+
+/* ── Back to top ── */
+window.addEventListener('scroll', () => {
+  $('#backToTopBtn').classList.toggle('visible', scrollY > 400);
+});
+$('#backToTopBtn').addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+</script>
+</body>
+</html>
