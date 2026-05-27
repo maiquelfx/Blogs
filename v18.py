@@ -1280,7 +1280,7 @@ async function searchPixabay(){
   const q = $('#pxb-query').value.trim();
   if(!q){ alert('Digite o que buscar.'); return; }
   $('#pxb-status').textContent = 'Buscando…'; $('#pxb-grid').innerHTML = '';
-  const url = `https://pixabay.com/api/?key=${PIXABAY_KEY}&q=${encodeURIComponent(q)}&image_type=photo&orientation=horizontal&safesearch=true&per_page=12&lang=pt`;
+  const url = `https://pixabay.com/api/?key=${PIXABAY_KEY}&q=${encodeURIComponent(q)}&image_type=photo&orientation=horizontal&safesearch=true&per_page=20&lang=pt`;
   try {
     const res = await fetch(url); const data = await res.json(); const hits = data.hits || [];
     if(!hits.length){ $('#pxb-status').textContent = 'Nenhuma imagem encontrada.'; return; }
@@ -1332,7 +1332,7 @@ async function searchInsertPixabay(autoSearch){
   const q = $('#insert-query').value.trim();
   if(!q){ if(!autoSearch) alert('Digite o que buscar.'); return; }
   $('#insert-pxb-status').textContent = 'Buscando…'; $('#insert-pxb-grid').innerHTML = '';
-  const url = `https://pixabay.com/api/?key=${PIXABAY_KEY}&q=${encodeURIComponent(q)}&image_type=photo&orientation=horizontal&safesearch=true&per_page=9&lang=pt`;
+  const url = `https://pixabay.com/api/?key=${PIXABAY_KEY}&q=${encodeURIComponent(q)}&image_type=photo&orientation=horizontal&safesearch=true&per_page=20&lang=pt`;
   try {
     const res = await fetch(url); const data = await res.json(); const hits = data.hits || [];
     if(!hits.length){ $('#insert-pxb-status').textContent = 'Nenhuma imagem.'; return; }
